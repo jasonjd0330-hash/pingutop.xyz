@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PINGU · Discord 机器人</title>
+<meta name="description" content="PINGU — 一个带有安全防护、工单、黏性消息、聊天等级、投稿、抽奖与计时提醒等功能的 Discord 机器人。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23121319'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-weight='700' font-size='15' fill='%237c93ff' text-anchor='middle'%3EP%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:        #0a0b0f;
+    --surface:   #121319;
+    --surface-2: #181a22;
+    --surface-3: #1f2129;
+    --border:    rgba(255,255,255,0.09);
+    --border-2:  rgba(255,255,255,0.15);
+    --text:      #eef0f3;
+    --text-dim:  #9499a6;
+    --text-faint:#5d6170;
+    --accent:    #4f6df5;
+    --accent-2:  #7c93ff;
+    --accent-soft: rgba(79,109,245,0.14);
+
+    --display: "Sora", "PingFang SC", sans-serif;
+    --body:    "Inter", "PingFang SC", sans-serif;
+    --mono:    "JetBrains Mono", "SF Mono", monospace;
+
+    --container: 1180px;
+    --r-sm: 8px;
+    --r-md: 12px;
+    --r-lg: 16px;
+  }
+
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--body);
+    line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  img,svg{ display:block; }
+  a{ color:inherit; text-decoration:none; }
+  ul{ margin:0; padding:0; list-style:none; }
+  h1,h2,h3,h4{ font-family:var(--display); margin:0; letter-spacing:-0.01em; }
+  p{ margin:0; }
+  button{ font-family:var(--body); cursor:pointer; }
+  code{ font-family:var(--mono); }
+
+  :focus-visible{ outline:2px solid var(--accent-2); outline-offset:3px; border-radius:4px; }
+
+  .container{ max-width:var(--container); margin:0 auto; padding:0 28px; }
+
+  .icon{ width:20px; height:20px; flex-shrink:0; }
+  .icon path, .icon circle, .icon line, .icon rect{
+    stroke:currentColor; stroke-width:1.6; fill:none; stroke-linecap:round; stroke-linejoin:round;
+  }
+
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:8px;
+    font-family:var(--mono); font-size:0.72rem; letter-spacing:0.12em;
+    text-transform:uppercase; color:var(--text-faint);
+  }
+  .eyebrow::before{ content:"//"; color:var(--accent-2); }
+
+  /* ============== 导航 ============== */
+  .nav{
+    position:sticky; top:0; z-index:50;
+    background:rgba(10,11,15,0.85);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--border);
+  }
+  .nav-row{
+    max-width:var(--container); margin:0 auto; padding:18px 28px;
+    display:flex; align-items:center; justify-content:space-between; gap:20px;
+  }
+  .brand{ display:flex; align-items:center; gap:10px; font-family:var(--display); font-weight:700; font-size:1.04rem; }
+  .brand-mark{
+    width:30px; height:30px; border-radius:7px;
+    background:var(--surface-3); border:1px solid var(--border-2);
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--mono); font-weight:600; font-size:0.85rem; color:var(--accent-2);
+    overflow:hidden; flex-shrink:0;
+  }
+  .brand-mark img{ width:100%; height:100%; object-fit:cover; }
+
+  .nav-links{ display:flex; align-items:center; gap:34px; font-size:0.9rem; color:var(--text-dim); }
+  .nav-links a{ transition:color .15s; }
+  .nav-links a:hover{ color:var(--text); }
+
+  .btn{
+    display:inline-flex; align-items:center; gap:8px;
+    padding:11px 20px; border-radius:var(--r-sm);
+    font-weight:600; font-size:0.88rem; border:1px solid transparent;
+    transition:background .15s, border-color .15s, transform .15s;
+  }
+  .btn-primary{ background:var(--accent); color:#fff; }
+  .btn-primary:hover{ background:var(--accent-2); }
+  .btn-outline{ border-color:var(--border-2); color:var(--text); background:transparent; }
+  .btn-outline:hover{ border-color:var(--accent-2); color:var(--accent-2); }
+
+  .burger{
+    display:none; width:38px; height:38px; border-radius:var(--r-sm);
+    border:1px solid var(--border); background:transparent; color:var(--text);
+    align-items:center; justify-content:center; font-size:1.1rem;
+  }
+  .mobile-panel{
+    display:none; flex-direction:column; padding:4px 28px 18px;
+    border-bottom:1px solid var(--border); background:rgba(10,11,15,0.98);
+  }
+  .mobile-panel a{ padding:13px 2px; border-bottom:1px solid var(--border); font-size:0.95rem; color:var(--text-dim); }
+  .mobile-panel .btn{ margin-top:12px; justify-content:center; }
+  body.nav-open .mobile-panel{ display:flex; }
+  @media (max-width:860px){
+    .nav-links, .nav-actions{ display:none; }
+    .burger{ display:flex; }
+  }
+
+  /* ============== HERO ============== */
+  .hero{ padding:84px 0 80px; position:relative; }
+  .hero::before{
+    content:""; position:absolute; top:-120px; right:-160px;
+    width:560px; height:560px; border-radius:50%;
+    background:radial-gradient(circle, rgba(79,109,245,0.16), transparent 68%);
+    pointer-events:none;
+  }
+  .hero-grid{ position:relative; display:grid; grid-template-columns:1.05fr 0.95fr; gap:64px; align-items:center; }
+  .status-pill{
+    display:inline-flex; align-items:center; gap:8px;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px 6px 10px; font-size:0.78rem; color:var(--text-dim);
+    margin-bottom:22px;
+  }
+  .status-pill .dot{ width:6px; height:6px; border-radius:50%; background:var(--accent-2); box-shadow:0 0 0 3px rgba(124,147,255,0.18); }
+
+  .hero h1{ font-size:clamp(2.1rem, 4vw, 3.1rem); font-weight:700; line-height:1.18; color:var(--text); }
+  .hero p.lede{ margin-top:20px; font-size:1.02rem; color:var(--text-dim); max-width:480px; }
+  .hero-actions{ display:flex; flex-wrap:wrap; gap:12px; margin-top:30px; }
+
+  .hero-stats{ display:flex; gap:36px; margin-top:46px; flex-wrap:wrap; }
+  .hero-stats div b{ display:block; font-family:var(--display); font-size:1.5rem; color:var(--text); }
+  .hero-stats div span{ font-size:0.78rem; color:var(--text-faint); }
+
+  /* ----- Discord 嵌入消息 仿真预览 ----- */
+  .mock-wrap{ position:relative; }
+  .mock-window{
+    background:#1e1f25;
+    border:1px solid var(--border);
+    border-radius:var(--r-lg);
+    box-shadow:0 30px 70px -30px rgba(0,0,0,0.7);
+    overflow:hidden;
+  }
+  .mock-bar{
+    display:flex; align-items:center; gap:7px;
+    padding:12px 16px; border-bottom:1px solid rgba(255,255,255,0.06);
+  }
+  .mock-bar span{ width:9px; height:9px; border-radius:50%; }
+  .mock-bar span:nth-child(1){ background:#ff5f57; }
+  .mock-bar span:nth-child(2){ background:#febc2e; }
+  .mock-bar span:nth-child(3){ background:#28c840; }
+  .mock-bar small{ margin-left:8px; color:#71757f; font-family:var(--mono); font-size:0.72rem; }
+
+  .mock-body{ padding:22px 20px 24px; }
+  .mock-author{ display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .mock-avatar{
+    width:26px; height:26px; border-radius:50%;
+    background:linear-gradient(135deg, var(--accent), #2a3aa8);
+    flex-shrink:0;
+  }
+  .mock-author span{ font-size:0.84rem; color:#dbdee1; font-weight:600; }
+
+  .mock-embed{
+    border-left:3px solid var(--accent);
+    background:#232428;
+    border-radius:0 8px 8px 0;
+    padding:14px 16px 16px;
+  }
+  .mock-embed h4{ font-size:0.92rem; color:#f2f3f5; margin-bottom:8px; }
+  .mock-fields{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-top:10px; }
+  .mock-field b{ display:block; font-size:0.72rem; color:#949ba4; margin-bottom:3px; }
+  .mock-field span{ font-size:0.82rem; color:#dbdee1; }
+  .mock-footer{ margin-top:14px; font-size:0.7rem; color:#6c7077; font-family:var(--mono); }
+
+  @media (max-width:980px){
+    .hero-grid{ grid-template-columns:1fr; }
+    .mock-wrap{ order:-1; }
+  }
+
+  /* ============== SECTION 通用 ============== */
+  .section{ padding:96px 0; border-top:1px solid var(--border); }
+  .section-head{ max-width:600px; margin-bottom:48px; }
+  .section-head h2{ font-size:clamp(1.6rem,2.6vw,2.1rem); margin-top:14px; font-weight:700; }
+  .section-head p{ margin-top:13px; color:var(--text-dim); font-size:0.98rem; }
+
+  /* ============== 功能网格 ============== */
+  .grid-features{ display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--border); border:1px solid var(--border); border-radius:var(--r-md); overflow:hidden; }
+  @media (max-width:980px){ .grid-features{ grid-template-columns:repeat(2,1fr); } }
+  @media (max-width:560px){ .grid-features{ grid-template-columns:1fr; } }
+
+  .feat{
+    background:var(--surface); padding:28px 24px; min-height:190px;
+    display:flex; flex-direction:column; gap:12px;
+    transition:background .2s ease;
+  }
+  .feat:hover{ background:var(--surface-2); }
+  .feat .icon{ color:var(--accent-2); transition:transform .25s ease; }
+  .feat:hover .icon{ transform:translateY(-2px); }
+  .feat h3{ font-size:1rem; font-weight:600; }
+  .feat p{ font-size:0.86rem; color:var(--text-dim); }
+  .feat code{ margin-top:auto; font-size:0.74rem; color:var(--text-faint); }
+
+  @keyframes fadeUp{ from{ opacity:0; transform:translateY(14px); } to{ opacity:1; transform:none; } }
+  .hero-anim{ opacity:0; }
+  .hero-anim.go{ animation:fadeUp .6s ease forwards; }
+
+  /* ============== 指令面板（终端风） ============== */
+  .term{ background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; }
+  .term-bar{ display:flex; align-items:center; gap:7px; padding:13px 18px; border-bottom:1px solid var(--border); background:var(--surface-2); }
+  .term-bar span{ width:9px; height:9px; border-radius:50%; }
+  .term-bar span:nth-child(1){ background:#ff5f57; }
+  .term-bar span:nth-child(2){ background:#febc2e; }
+  .term-bar span:nth-child(3){ background:#28c840; }
+  .term-bar small{ margin-left:10px; font-family:var(--mono); font-size:0.74rem; color:var(--text-faint); }
+
+  .term-body{ padding:22px; }
+  .term-controls{ display:flex; flex-wrap:wrap; gap:10px; margin-bottom:20px; }
+  .term-search{
+    flex:1 1 220px; background:var(--bg); border:1px solid var(--border);
+    border-radius:var(--r-sm); padding:11px 14px; color:var(--text);
+    font-family:var(--mono); font-size:0.85rem;
+  }
+  .term-search::placeholder{ color:var(--text-faint); }
+  .term-tabs{ display:flex; gap:4px; flex-wrap:wrap; border-bottom:1px solid var(--border); margin-bottom:4px; }
+  .term-tab{
+    background:transparent; border:none; color:var(--text-dim);
+    padding:10px 4px; margin-right:18px; font-size:0.85rem;
+    border-bottom:2px solid transparent;
+  }
+  .term-tab.active{ color:var(--text); border-color:var(--accent); font-weight:600; }
+
+  .term-list{ display:grid; grid-template-columns:repeat(2,1fr); gap:1px; background:var(--border); margin-top:16px; border:1px solid var(--border); border-radius:var(--r-sm); overflow:hidden; }
+  @media (max-width:700px){ .term-list{ grid-template-columns:1fr; } }
+  .term-row{ display:flex; align-items:flex-start; gap:12px; background:var(--surface); padding:12px 14px; }
+  .term-row code{ font-size:0.79rem; color:var(--accent-2); white-space:nowrap; flex-shrink:0; padding-top:1px; }
+  .term-row span{ font-size:0.83rem; color:var(--text-dim); }
+  .term-empty{ text-align:center; padding:40px 0; color:var(--text-dim); font-size:0.9rem; display:none; }
+
+  /* ============== 数据条 ============== */
+  .strip{ display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--border); border:1px solid var(--border); border-radius:var(--r-md); overflow:hidden; }
+  .strip > div{ background:var(--surface); padding:28px 24px; }
+  .strip h4{ font-size:0.92rem; font-weight:600; margin-bottom:8px; }
+  .strip p{ font-size:0.82rem; color:var(--text-dim); }
+  @media (max-width:860px){ .strip{ grid-template-columns:repeat(2,1fr); } }
+  @media (max-width:520px){ .strip{ grid-template-columns:1fr; } }
+
+  /* ============== CTA ============== */
+  .cta{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg);
+    padding:64px 48px; text-align:center;
+  }
+  .cta h2{ font-size:clamp(1.6rem,3vw,2.2rem); }
+  .cta p{ margin-top:14px; color:var(--text-dim); font-size:0.96rem; max-width:480px; margin-inline:auto; }
+  .cta .hero-actions{ justify-content:center; margin-top:28px; }
+  @media (max-width:600px){ .cta{ padding:46px 24px; } }
+
+  .edit-note{
+    margin-top:18px; font-family:var(--mono); font-size:0.76rem; color:var(--text-faint);
+    border:1px dashed var(--border-2); border-radius:var(--r-sm); padding:10px 14px;
+  }
+
+  footer{ border-top:1px solid var(--border); padding:32px 0 50px; }
+  .footer-row{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; font-size:0.8rem; color:var(--text-faint); }
+  .footer-links{ display:flex; gap:20px; }
+
+  .reveal{ opacity:0; transform:translateY(14px); transition:opacity .5s ease, transform .5s ease; }
+  .reveal.in-view{ opacity:1; transform:none; }
+
+  @media (prefers-reduced-motion: reduce){ *{ transition:none !important; animation:none !important; scroll-behavior:auto !important; } }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-row">
+    <div class="brand">
+      <span class="brand-mark" id="brandMark">P</span>
+      <span id="brandName">NightMirror</span>
+    </div>
+    <div class="nav-links">
+      <a href="#features">功能</a>
+      <a href="#commands">指令</a>
+      <a href="#specs">规格</a>
+    </div>
+    <div class="nav-actions">
+      <a class="btn btn-primary" id="inviteBtnTop" href="#invite">邀请机器人</a>
+    </div>
+    <button class="burger" id="burgerBtn" aria-label="打开菜单" aria-expanded="false">☰</button>
+  </div>
+  <div class="mobile-panel" id="mobilePanel">
+    <a href="#features">功能</a>
+    <a href="#commands">指令</a>
+    <a href="#specs">规格</a>
+    <a class="btn btn-primary" id="inviteBtnMobile" href="#invite">邀请机器人</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="container hero-grid">
+    <div class="hero-anim">
+      <span class="status-pill"><span class="dot"></span>个人 Discord 机器人</span>
+      <h1>把服务器管理<br>交给 <span id="heroBrandName" style="color:var(--accent-2)">PINGU</span></h1>
+      <p class="lede" id="heroLede">安全防护、工单、黏性消息、聊天等级、投稿、抽奖、计时提醒——<span style="color:var(--text)">这些</span>是它目前能做的事。</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" id="inviteBtnHero" href="#invite">邀请到我的服务器</a>
+        <a class="btn btn-outline" href="#commands">查看全部指令</a>
+      </div>
+      <div class="hero-stats">
+        <div><b>40+</b><span>条指令</span></div>
+        <div><b>8</b><span>功能模块</span></div>
+        <div><b>2</b><span>种指令风格 / · !</span></div>
+        <div><b>100%</b><span>中文界面</span></div>
+      </div>
+    </div>
+
+    <div class="mock-wrap hero-anim" style="animation-delay:.15s">
+      <div class="mock-window">
+        <div class="mock-bar"><span></span><span></span><span></span><small>#服务器管理</small></div>
+        <div class="mock-body">
+          <div class="mock-author"><div class="mock-avatar"></div><span id="mockAuthorName">PINGU</span></div>
+          <div class="mock-embed">
+            <h4>🛡️ 安全拦截报告</h4>
+            <div class="mock-fields">
+              <div class="mock-field"><b>违规用户</b><span>@member</span></div>
+              <div class="mock-field"><b>所在频道</b><span>#general</span></div>
+              <div class="mock-field"><b>处理结果</b><span>删除 + 禁言 5 分钟</span></div>
+              <div class="mock-field"><b>拦截原因</b><span>触发敏感词规则</span></div>
+            </div>
+            <div class="mock-footer">安全系统 · 自动记录 · 今天 23:41</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="section" id="features">
+  <div class="container">
+    <div class="section-head">
+      <div class="eyebrow">功能模块</div>
+      <h2>8 个功能模块</h2>
+      <p>每个模块都有独立的配置面板，可以在 Discord 内直接开关、调整参数。</p>
+    </div>
+    <div class="grid-features">
+
+      <div class="feat reveal">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V6l7-3z"/></svg>
+        <h3>安全防护</h3>
+        <p>敏感词、链接拦截、字数上限，违规自动撤回并禁言，记录同步到日志频道。</p>
+        <code>/protection-panel</code>
+      </div>
+
+      <div class="feat reveal">
+        <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><line x1="12" y1="6" x2="12" y2="18" stroke-dasharray="3 3"/></svg>
+        <h3>工单系统</h3>
+        <p>多按钮自定义工单类型，点击即生成专属频道，处理完一键关闭归档。</p>
+        <code>/ticket</code>
+      </div>
+
+      <div class="feat reveal">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M12 17v4M7 13h10l-1.2-5.2a3 3 0 0 0-2.9-2.3h-1.8a3 3 0 0 0-2.9 2.3L7 13z"/></svg>
+        <h3>黏性消息</h3>
+        <p>公告自动置底，新消息一来即重新发送，并带防刷屏冷却时间。</p>
+        <code>/sticky</code>
+      </div>
+
+      <div class="feat reveal">
+        <svg class="icon" viewBox="0 0 24 24"><line x1="5" y1="20" x2="5" y2="12"/><line x1="12" y1="20" x2="12" y2="7"/><line x1="19" y1="20" x2="19" y2="15"/></svg>
+        <h3>聊天等级</h3>
+        <p>发言自动累积经验值，升级即时提示，里程碑等级附带专属消息。</p>
+        <code>/level · /chat-level</code>
+      </div>
+
+      <div class="feat reveal">
+        <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+        <h3>投稿信墙</h3>
+        <p>匿名或实名投稿都能送达展示区，管理员可凭验证码核实身份。</p>
+        <code>/submit-panel · /reveal-anon</code>
+      </div>
+
+      <div class="feat reveal">
+        <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>
+        <h3>计时与提醒</h3>
+        <p>公开倒计时到点 @ 通知，私人提醒到点私信，互不打扰。</p>
+        <code>/timer · /reminder</code>
+      </div>
+
+      <div class="feat reveal">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M20 8a3 3 0 0 0-6 0H10a3 3 0 0 0-6 0v2h16V8z"/><path d="M4 10v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><line x1="12" y1="10" x2="12" y2="20"/></svg>
+        <h3>抽奖系统</h3>
+        <p>一键参加，人数实时更新，开奖 ID 可复制，发起人随时可提前结束。</p>
+        <code>/raffle · /raffle-end</code>
+      </div>
+
+      <div class="feat reveal">
+        <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M13 15h4"/></svg>
+        <h3>娱乐与小工具</h3>
+        <p>21 点、猜数字、趣味测试，外加计算器、头像查询与 @ 记录追踪。</p>
+        <code>/blackjack · /calc · /avatar</code>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section class="section" id="commands">
+  <div class="container">
+    <div class="section-head">
+      <div class="eyebrow">指令</div>
+      <h2>每条指令，按分类查找</h2>
+      <p>支持按关键词搜索，或切换下方分类标签。</p>
+    </div>
+
+    <div class="term">
+      <div class="term-bar"><span></span><span></span><span></span><small>commands.list</small></div>
+      <div class="term-body">
+        <div class="term-controls">
+          <input class="term-search" id="cmdSearch" type="text" placeholder="搜索指令，例如 ban / 计算器 / 黏性…">
+        </div>
+        <div class="term-tabs" id="cmdTabs"></div>
+        <div class="term-list" id="cmdList"></div>
+        <div class="term-empty" id="cmdEmpty">没有找到符合条件的指令，换个关键词试试。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="specs">
+  <div class="container">
+    <div class="section-head">
+      <div class="eyebrow">规格</div>
+      <h2>技术细节</h2>
+    </div>
+    <div class="strip">
+      <div><h4>本地持久化</h4><p>警告、消费、等级、抽奖等数据写入本地文件，重启服务不会丢失。</p></div>
+      <div><h4>全中文界面</h4><p>所有提示、按钮、表单均为原生中文设计。</p></div>
+      <div><h4>双指令风格</h4><p>同时支持 / 斜杠指令与 ! 前缀指令。</p></div>
+      <div><h4>操作日志</h4><p>指令使用、消息删除、@ 记录均可选择性记录到指定频道。</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="invite">
+  <div class="container">
+    <div class="cta">
+      <div class="eyebrow" style="justify-content:center;display:flex;">邀请</div>
+      <h2 style="margin-top:14px;">邀请到你的服务器</h2>
+      <p>邀请时需要授予管理员权限，进来之后用 <code style="color:var(--accent-2)">/help</code> 看全部指令，再按需要打开各个功能面板。</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" id="inviteBtnFooter" href="#">邀请机器人</a>
+        <a class="btn btn-outline" id="supportBtn" href="#">加入支持服务器</a>
+      </div>
+      <button id="copyInviteBtn" style="margin-top:16px;background:transparent;border:none;color:var(--text-faint);font-size:0.78rem;font-family:var(--mono);text-decoration:underline;text-decoration-color:var(--border-2);">复制邀请链接</button>
+      <p class="edit-note">编辑提示：机器人名称、邀请链接与头像在本文件底部的 CONFIG 区块设置，改完保存即可生效。</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container footer-row">
+    <span id="footerName">© NightMirror</span>
+    <div class="footer-links">
+      <a href="#features">功能</a>
+      <a href="#commands">指令</a>
+      <a href="#specs">规格</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ====== 在这里编辑你的机器人信息 ====== */
+const CONFIG = {
+  name:       "PINGU",
+  inviteUrl:  "https://invite.pingutop.xyz/",
+  supportUrl: "#",
+  avatarUrl:  ""
+};
+
+(function applyConfig(){
+  document.title = CONFIG.name + " · Discord 机器人";
+  document.querySelectorAll('#brandName, #heroBrandName, #mockAuthorName').forEach(el => el.textContent = CONFIG.name);
+  document.getElementById('footerName').textContent = "© " + CONFIG.name;
+
+  ['inviteBtnTop','inviteBtnMobile','inviteBtnHero','inviteBtnFooter'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && CONFIG.inviteUrl && CONFIG.inviteUrl !== "#") {
+      el.href = CONFIG.inviteUrl;
+      el.target = "_blank";
+      el.rel = "noopener noreferrer";
+    }
+  });
+
+  const supportEl = document.getElementById('supportBtn');
+  if (CONFIG.supportUrl && CONFIG.supportUrl !== "#") {
+    supportEl.href = CONFIG.supportUrl;
+    supportEl.target = "_blank";
+    supportEl.rel = "noopener noreferrer";
+  } else {
+    supportEl.style.display = 'none';
+  }
+
+  if (CONFIG.avatarUrl) {
+    document.getElementById('brandMark').innerHTML = '<img src="' + CONFIG.avatarUrl + '" alt="' + CONFIG.name + '">';
+  }
+
+  const copyBtn = document.getElementById('copyInviteBtn');
+  if (CONFIG.inviteUrl && CONFIG.inviteUrl !== "#") {
+    copyBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(CONFIG.inviteUrl).then(() => {
+        const original = copyBtn.textContent;
+        copyBtn.textContent = '已复制 ✓';
+        setTimeout(() => copyBtn.textContent = original, 1800);
+      });
+    });
+  } else {
+    copyBtn.style.display = 'none';
+  }
+})();
+
+requestAnimationFrame(() => {
+  document.querySelectorAll('.hero-anim').forEach((el, i) => {
+    el.style.animationDelay = el.style.animationDelay || (i * 0.08) + 's';
+    el.classList.add('go');
+  });
+});
+
+const burger = document.getElementById('burgerBtn');
+burger.addEventListener('click', () => {
+  const open = document.body.classList.toggle('nav-open');
+  burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+  burger.textContent = open ? '✕' : '☰';
+});
+document.querySelectorAll('.mobile-panel a').forEach(a => a.addEventListener('click', () => {
+  document.body.classList.remove('nav-open');
+  burger.textContent = '☰';
+}));
+
+const COMMAND_DATA = {
+  "管理功能": [
+    ["/ban · !ban", "封禁成员，含私信通知、清除消息与日志记录"],
+    ["/unban", "通过用户 ID 解封成员"],
+    ["/ban-list", "查看服务器封禁列表"],
+    ["/clear · !clear", "批量清理消息，支持按成员或关键词过滤"],
+    ["/clearwarns", "清除成员的全部警告记录"],
+    ["/command-log", "设置指令使用日志频道"],
+    ["/delete-log", "绑定消息删除审计日志频道"],
+    ["/fake-message", "用 Webhook 模拟成员发言（不会真实 @）"],
+    ["/protection-panel", "开启安全控制台：敏感词 / 链接 / 字数限制"],
+    ["/reveal-anon", "凭验证码查询匿名投稿人真实身份"],
+    ["/role · !role", "为成员添加或移除身份组"],
+    ["/role-info", "查看身份组详细信息"],
+    ["/silent-delete", "在指定频道开启静默删除"],
+    ["/submit-panel", "部署匿名 / 实名投稿面板"],
+    ["/user-history", "查询成员最近 1 小时发言与删除记录"],
+    ["/warn · !warn", "对成员发出警告"],
+    ["/warnings", "查看成员警告记录"],
+    ["/ticket", "工单系统的设置与部署面板"],
+    ["/welcome", "设置欢迎 / 再见频道"],
+    ["/rename · !rename", "修改频道名称"],
+    ["/nick · !nick", "修改成员昵称"],
+    ["/sticky", "设置与管理黏性置底消息"]
+  ],
+  "游戏娱乐": [
+    ["/blackjack", "玩一局 21 点，支持「新游戏」按钮"],
+    ["/gay", "趣味测试小游戏（仅供娱乐）"],
+    ["/guess · !guess", "猜数字游戏，1 到 100，带范围提示"]
+  ],
+  "实用工具": [
+    ["/afk · !afk", "设置 AFK 状态，被 @ 时自动提示"],
+    ["/avatar · !avatar", "获取成员高清头像，含多格式下载"],
+    ["/calc · !calc", "专业计算器：三角函数、对数、阶乘、组合数"],
+    ["/check-mentions", "查看自己被谁 @ 过，含频道与内容"],
+    ["/expense · !expense", "查看消费记录"],
+    ["!add", "为指定成员添加一笔消费记录"],
+    ["/link · !link", "获取机器人邀请链接"],
+    ["/ping · !ping", "检查机器人延迟与网络状态"],
+    ["/raffle", "创建抽奖活动，ID 可复制，支持提前结束"],
+    ["/raffle-end", "凭抽奖 ID 立即结束并开奖"],
+    ["/reminder", "设置定时提醒，到点私信通知"],
+    ["/reminder-list", "查看自己所有待处理的提醒"],
+    ["/reminder-clear", "清除自己所有的提醒"],
+    ["/timer · !timer", "公开倒计时，到点在频道 @ 你"],
+    ["/timer-list", "查看自己所有运行中的计时器"],
+    ["/timer-cancel", "取消自己所有的计时器"],
+    ["/serverinfo", "查看服务器详细信息"],
+    ["/userinfo · !userinfo", "查看成员资料卡"],
+    ["/level · !level", "查看聊天等级与经验值进度"],
+    ["/auto-reply", "管理自动回复，支持文字与图片"],
+    ["/chat-level", "开启或关闭聊天升级功能"]
+  ],
+  "语音频道": [
+    ["!join", "加入你当前所在的语音频道"],
+    ["!leave", "离开语音频道"]
+  ]
+};
+
+const cmdTabsEl = document.getElementById('cmdTabs');
+const cmdListEl = document.getElementById('cmdList');
+const cmdEmptyEl = document.getElementById('cmdEmpty');
+const cmdSearchEl = document.getElementById('cmdSearch');
+let activeCategory = "全部";
+
+["全部", ...Object.keys(COMMAND_DATA)].forEach(cat => {
+  const btn = document.createElement('button');
+  btn.className = 'term-tab' + (cat === "全部" ? ' active' : '');
+  btn.textContent = cat;
+  btn.addEventListener('click', () => {
+    activeCategory = cat;
+    [...cmdTabsEl.children].forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    renderCommands();
+  });
+  cmdTabsEl.appendChild(btn);
+});
+
+function getAllCommands(){
+  const list = [];
+  Object.entries(COMMAND_DATA).forEach(([cat, items]) => items.forEach(([name, desc]) => list.push({ cat, name, desc })));
+  return list;
+}
+
+function renderCommands(){
+  const query = cmdSearchEl.value.trim().toLowerCase();
+  const filtered = getAllCommands().filter(c => {
+    const matchCat = activeCategory === "全部" || c.cat === activeCategory;
+    const matchQuery = !query || c.name.toLowerCase().includes(query) || c.desc.toLowerCase().includes(query);
+    return matchCat && matchQuery;
+  });
+  cmdListEl.innerHTML = '';
+  filtered.forEach(c => {
+    const row = document.createElement('div');
+    row.className = 'term-row';
+    row.innerHTML = '<code>' + c.name + '</code><span>' + c.desc + '</span>';
+    cmdListEl.appendChild(row);
+  });
+  cmdEmptyEl.style.display = filtered.length ? 'none' : 'block';
+}
+cmdSearchEl.addEventListener('input', renderCommands);
+renderCommands();
+
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const reveals = document.querySelectorAll('.reveal');
+if ('IntersectionObserver' in window && !reduceMotion) {
+  const obs = new IntersectionObserver(entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in-view'); }), { threshold:0.15 });
+  reveals.forEach(el => obs.observe(el));
+} else {
+  reveals.forEach(el => el.classList.add('in-view'));
+}
+</script>
+</body>
+</html>
